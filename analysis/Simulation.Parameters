@@ -1,0 +1,81 @@
+#Duration of the simulation in seconds
+Simulation Length=1000
+Runtime timeout=4000
+Simulation script=sim_two_networks.py
+
+Simulation parameters=Run Number,Excitatory Connectivity,Inhibitory Connectivity,Two networks connection count,longrangeGain,Network 1 stimulus input strength,Input tau
+External input=False
+Stimulus size=0
+Weight external input=0.0085
+Two networks align connections=True
+Grid size=50
+eeGain=1
+inputDecay Ex=9
+inputDecay In=9
+Conduction delay long range=25
+
+Network 1 stimulus 1f slope=0
+Network 1 jump across=1
+
+Output network=True
+Output membrane potential=False
+Output activity=True
+
+Local Range Ex=4
+Local Range In=4
+Network type=Circle neighborhood exponential distance
+Two networks connection type=Reciprocal
+Synchrony duration exclusion threshold=125
+
+#How to name output file
+Output dir path format=runs/input/EC%.2f.IC%.2f.CCount%.2f.lrg%.2f.n1s%.4f.IP%i.Run%d/
+Output dir path parameters=Excitatory Connectivity,Inhibitory Connectivity,Two networks connection count,longrangeGain,Network 1 stimulus input strength,Input tau,Run Number
+Run analysis script name=run_analysis
+
+# Network loading parameters
+#Network to load path format=EC%.3f.IC%.3f.Run%d
+#Network to load path input parameters=Excitatory Connectivity,Inhibitory Connectivity,Run Number
+
+# MATLAB ANALYSIS/PLOTTING
+Plot DFA=True
+Plot Kappa=True
+Calculate DFA=True
+Calculate Kappa=True
+Calculate amplitude=True
+
+# Attention - these should be contiguous !!!!
+delta_hp = 1
+delta_lp = 4
+theta_hp = 4
+theta_lp = 8
+alpha_hp = 8
+alpha_lp = 16
+beta_hp = 16
+beta_lp = 30
+gamma_hp = 30
+gamma_lp = 50
+
+Add white noise=True
+White noise sd=3
+
+Kappa avalanche size min=1
+Kappa avalanche size max=2500
+Kappa bins=12
+
+DFA calc smallest window=1
+DFA calc largest window=50
+DFA calc window overlap=0.5
+DFA fit smallest window=5
+DFA fit largest window=30
+
+PSD plot=True
+PSD fit plot=True
+PSD fit=True
+PSD fit interval1 low=0.1
+PSD fit interval1 high=1
+PSD fit interval2 low=20
+PSD fit interval2 high=100
+PSD fit hamming exponent=13
+
+#0 is 0, 1 is half the signal median
+Kappa threshold type=1
