@@ -11,6 +11,8 @@ This script is a neural mass model for V1.
 
 def config_params(params=[]):
     # default settings
+    ntau = 0.5
+    nsig = np.array([0.01])
     k_e = np.array([1.0])            #Max value of excitatory response function
     k_i = np.array([2.0])            #Max value of inhibitory response function
     r_e = np.array([1.0])            #Excitatory refractory period
@@ -35,7 +37,7 @@ def config_params(params=[]):
     Q = np.array([0.0])              #External stimulus to the inhibitory population
     shift_sigmoid = np.array([False])
                          
-    DEFAULT_PARAMS = {'k_e':k_e, 'k_i':k_i, 'r_e':r_e, 'r_i':r_i, 'c_ee':c_ee, 'c_ei':c_ei,
+    DEFAULT_PARAMS = {'ntau': ntau, 'nsig': nsig, 'k_e':k_e, 'k_i':k_i, 'r_e':r_e, 'r_i':r_i, 'c_ee':c_ee, 'c_ei':c_ei,
                       'c_ie':c_ie, 'c_ii':c_ii, 'tau_e':tau_e, 'tau_i':tau_i,
                       'a_e':a_e, 'b_e':b_e, 'c_e':c_e, 'a_i':a_i, 'b_i':b_i, 'c_i':c_i,
                       'theta_e':theta_e, 'theta_i':theta_i, 'alpha_e':alpha_e, 'alpha_i':alpha_i,
@@ -44,7 +46,10 @@ def config_params(params=[]):
     if params:
         for i,j in enumerate(params.keys()):
             if j in DEFAULT_PARAMS:
-                DEFAULT_PARAMS[j] = np.array([params[j]])
+                if j == 'ntau':
+                    DEFAULT_PARAMS[j] = params[j]
+                else:
+                    DEFAULT_PARAMS[j] = np.array([params[j]])
 
     return DEFAULT_PARAMS
 
@@ -82,12 +87,19 @@ def config_surface(region, folder_path='/mnt/user/drive/My Libraries/tutorials&e
     default_cortex.configure()
     return default_cortex
 
-def config_simulator(params, region, surface):
+def config_simulator(params, region, surface, integ_mode='stochastic', simu_length=1000000):
     simulator.Simulator()
     # specify the coupling
     c=coupling.Sigmoidal()
-    # The algorithm to solve differential equations
-    integ = integrators.HeunStochastic(dt=0.5) # a. simulate the noise of eeg recording; b. Heun is a more accurate approximation than Euler
+    
+    if integ_mode == 'stochastic':
+        nois = noise.Multiplicative(ntau=params['ntau'], nsig = params['nsig'], b=equations.Gaussian())  # ? Do we need to optimize ntau?
+        nois.configure_coloured(dt=0.1, shape=1)  # ? shape?? 
+        integ = integrators.HeunStochastic(dt=0.1, noise=nois)
+    elif integ_mode == 'deterministic':
+        integ = integrators.HeunDeterministic(dt=0.1)
+    else:
+        raise ValueError("`integ_mode` should be either 'stochastic' or 'deterministic'!")
 
     # specify the model
     mod = models.WilsonCowan(k_e = params['k_e'],            #Max value of excitatory response function
@@ -120,10 +132,10 @@ def config_simulator(params, region, surface):
     sim = simulator.Simulator(model = mod, connectivity = region,
                           coupling = c, 
                           integrator = integ, monitors = (mon_savg,),
-                          simulation_length = 1000000,
+                          simulation_length = simu_length,
                           surface = surface)
     sim.configure()
-    sim.integrator.noise.nsig = np.array([1.]) # configure the noise otherwise ERROR: Bad Simulator.integrator.noise.nsig shape
+    # sim.integrator.noise.nsig = np.array([1.]) # configure the noise otherwise ERROR: Bad Simulator.integrator.noise.nsig shape
     return sim
 
 def gen_simu_name(data_folder, params):
@@ -165,53 +177,36 @@ def check_simu_name(data_folder, result_name):
             else:
                 return False
 
-def run_simulation(sim, data_folder, params):
+def run_simulation(sim, params, check_point=20000, return_signal=False, data_folder=''):
     savg_data = []
     savg_time = []
-    result_name = gen_simu_name(data_folder, params)
 
     batch = 0
-    check_point = 20000
-    oscillation = False
-    for savg in sim():
-        if not savg is None:
-            savg_time.append(savg[0][0])
-            savg_data.append(savg[0][1])
-            if len(savg_time) == check_point:
-                SAVG = np.array(savg_data)
-                v1 = SAVG[:,0,0,0]
-                # v2 = SAVG[:,0,1,0]
-                df = pd.DataFrame({'time':savg_time,
-                                   's_v1':v1})
-                if batch == 0:
-                    df.to_csv(result_name, index=False, header=False)
-                elif batch == 1:
-                    if sum(abs(v1[-10000:])) < 200:
-                        print("Oscillation is not generated. Trial will be terminated.")
-                        sys.stdout.flush()
-                        break
+    check_point = check_point
+    if not return_signal:
+        result_name = gen_simu_name(data_folder, params)
+        for savg in sim():
+            if not savg is None:
+                savg_time.append(savg[0][0])
+                savg_data.append(savg[0][1])
+                if len(savg_time) == check_point:
+                    SAVG = np.array(savg_data)
+                    v1 = SAVG[:,0,0,0]
+                    # v2 = SAVG[:,0,1,0]
+                    df = pd.DataFrame({'time':savg_time,
+                                       's_v1':v1})
+                    if batch == 0:
+                        df.to_csv(result_name, index=False, header=False)
                     else:
-                        oscillation = True
                         df.to_csv(result_name, mode='a', index=False, header=False)
-                else:
-                    df.to_csv(result_name, mode='a', index=False, header=False)
-                batch +=1
-                df= []
-                savg_data = []
-                savg_time = []
-    return (result_name, oscillation)
-
-def evaluation(result_name, oscillation):
-    if oscillation:
-        df = pd.read_csv(result_name, header = None)
-        data = df[1].to_numpy()
-        raw = dfa.load_data([data])
-        R , _ = dfa.compute_DFA(raw)
-        if R>0.7 and R<1:
-            print('Criticality! R=%d'%R, flush=True)
-            sys.stdout.flush()
-        else:
-            os.remove(result_name)
-        return abs(R-0.85)
+                    batch +=1
+                    df= []
+                    savg_data = []
+                    savg_time = []
+        return result_name
     else:
-        return 10
+        for savg in sim():
+            if not savg is None:
+                savg_time.append(savg[0][0])
+                savg_data.append(savg[0][1])
+        return (savg_time, savg_data)

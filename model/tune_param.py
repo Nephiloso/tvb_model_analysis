@@ -5,10 +5,16 @@ import os
 # from datetime import date
 from ray.tune.suggest.bayesopt import BayesOptSearch
 from one_region_simu import *
+from logger import *
 
-data_folder = os.path.join(os.getcwd(), 'data')
+data_folder = os.path.join(r'C:\Users\wpp_1\Documents\Neurasmus\VU\Internship\codes\data')
+exp_name = '20220531_trial1'
+ray_folder = os.path.join(data_folder,'ray_results')
+exp_folder = os.path.join(ray_folder, exp_name)
+os.makedirs(exp_folder, exist_ok=True)
 
-config={ "c_ee": tune.uniform(12.5, 13.5),
+config={'ntau':tune.uniform(0.0000001,10),
+        "c_ee": tune.uniform(12.5, 13.5),
         "c_ei": tune.uniform(7, 10),
         'c_ie': tune.uniform(6, 18),
         'c_ii': tune.uniform(7, 10),
@@ -29,20 +35,26 @@ def run_model(config):
     tune.report(score)
 
 smoke_test = True
-nsample = 50 # 1000
-bayesopt = BayesOptSearch(metric="score", mode="min")
+nsample = 400
+bayesopt = BayesOptSearch(metric="score", mode="min",random_search_steps=100)
+restore = True
+if restore:
+    bayesopt.restore(os.path.join(ray_folder, 'baye_checkpoint.pkl'))
 analysis = tune.run(run_model,
-                    name = '20220522_trail1',
-                    local_dir=os.path.join(data_folder,'ray_results'),
+                    verbose=3,
+                    name = exp_name,
+                    local_dir=ray_folder,
                     search_alg=bayesopt,
-                    config=config,
-                    # progress_reporter=tune.JupyterNotebookReporter(score),
-                    num_samples=1 if smoke_test else nsample)
-
+                    # config=config,
+                    metric="score",
+                    mode="min",
+                    callbacks=[CustomLoggerCallback(filefolder=exp_folder, filename= "log_test.txt")],
+                    stop={'score':0.08},
+                    # resume=True, # do this when you whant to resume a stopped experiment
+                    max_concurrent_trials = 1,  # TODO Test this after the checkpoint changed
+                    num_samples=2 if smoke_test else nsample)
 print("Best hyperparameters found were: ", analysis.best_config)
-# params = config_params()
-# region = config_one_region()
-# surface = config_surface(region)
-# sim = config_simulator(params, region, surface)
-# result_name, oscillation = run_simulation(sim)
-# score = evaluation(result_name, oscillation)
+print("Best result: ", analysis.best_result)
+
+# save the current experiment
+bayesopt.save(os.path.join(ray_folder, 'baye_checkpoint.pkl'))
