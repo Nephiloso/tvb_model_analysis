@@ -4,6 +4,7 @@ from datetime import date
 import os
 import dfa
 import numpy as np
+import pdb
 
 '''
 This script is a neural mass model for V1.
@@ -87,7 +88,7 @@ def config_surface(region, folder_path='/mnt/user/drive/My Libraries/tutorials&e
     default_cortex.configure()
     return default_cortex
 
-def config_simulator(params, region, surface, integ_mode='stochastic', simu_length=1000000):
+def config_simulator(params, region, surface, integ_mode='stochastic', simu_length=1000000,Fs=2**-1):
     simulator.Simulator()
     # specify the coupling
     c=coupling.Sigmoidal()
@@ -128,14 +129,14 @@ def config_simulator(params, region, surface, integ_mode='stochastic', simu_leng
                         )
     #Initialise some Monitors with period in physical time
     # TODO configure monitor for each node after optimization is done
-    mon_savg = monitors.SpatialAverage(period=2**-1)
+    mon_savg = monitors.SpatialAverage(period=Fs)
     sim = simulator.Simulator(model = mod, connectivity = region,
                           coupling = c, 
                           integrator = integ, monitors = (mon_savg,),
                           simulation_length = simu_length,
                           surface = surface)
     sim.configure()
-    # sim.integrator.noise.nsig = np.array([1.]) # configure the noise otherwise ERROR: Bad Simulator.integrator.noise.nsig shape
+    # sim.integrator.noise.nsig = np.array([1.]) # configure the noise seperately otherwise ERROR: Bad Simulator.integrator.noise.nsig shape
     return sim
 
 def gen_simu_name(data_folder, params):
@@ -174,8 +175,7 @@ def check_simu_name(data_folder, result_name):
         for file in files:
             if file.__contains__(result_name):
                 return True
-            else:
-                return False
+    return False
 
 def run_simulation(sim, params, check_point=20000, return_signal=False, data_folder=''):
     savg_data = []
@@ -185,24 +185,27 @@ def run_simulation(sim, params, check_point=20000, return_signal=False, data_fol
     check_point = check_point
     if not return_signal:
         result_name = gen_simu_name(data_folder, params)
-        for savg in sim():
-            if not savg is None:
-                savg_time.append(savg[0][0])
-                savg_data.append(savg[0][1])
-                if len(savg_time) == check_point:
-                    SAVG = np.array(savg_data)
-                    v1 = SAVG[:,0,0,0]
-                    # v2 = SAVG[:,0,1,0]
-                    df = pd.DataFrame({'time':savg_time,
-                                       's_v1':v1})
-                    if batch == 0:
-                        df.to_csv(result_name, index=False, header=False)
-                    else:
-                        df.to_csv(result_name, mode='a', index=False, header=False)
-                    batch +=1
-                    df= []
-                    savg_data = []
-                    savg_time = []
+        if not check_file_exist(result_name):
+            for savg in sim():
+                if not savg is None:
+                    savg_time.append(savg[0][0])
+                    savg_data.append(savg[0][1])
+                    if len(savg_time) == check_point:
+                        SAVG = np.array(savg_data)
+                        v1 = SAVG[:,0,0,0]
+                        # v2 = SAVG[:,0,1,0]
+                        if np.isnan(v1[-1]):
+                            return result_name
+                        df = pd.DataFrame({'time':savg_time,
+                                           's_v1':v1})
+                        if batch == 0:
+                            df.to_csv(result_name, index=False, header=False)
+                        else:
+                            df.to_csv(result_name, mode='a', index=False, header=False)
+                        batch +=1
+                        df= []
+                        savg_data = []
+                        savg_time = []
         return result_name
     else:
         for savg in sim():
@@ -210,3 +213,12 @@ def run_simulation(sim, params, check_point=20000, return_signal=False, data_fol
                 savg_time.append(savg[0][0])
                 savg_data.append(savg[0][1])
         return (savg_time, savg_data)
+    
+def check_file_exist(result_name, Fs = 2**-1, simu_length=1000000):
+    if os.path.exists(result_name):
+        df = pd.read_csv(result_name, header = None)
+        if len(df) == simu_length/Fs:
+            return True
+        else:
+            os.remove(result_name)
+            return False
