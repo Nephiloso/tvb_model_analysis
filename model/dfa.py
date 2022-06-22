@@ -1,28 +1,21 @@
 import mne
-import numpy as np
 import nolds
+import numpy as np
+import random as rd
 from numpy.matlib import repmat
 from scipy.signal import detrend
 
-'''
-Modified from NBT2 by Peixuan Wu. email: wpp_123@live.com
-
-This script is used to do detrended fluctuation analysis.
-'''
-
-def load_data(data, sfreq = 2000, ch_types = ['eeg'], ch_names = ['V1']):
-    '''
-    Convert the numpy array into a instance of mne.Raw().
-
-    INPUT:
-    data: MxN numpy array. M: # of time series, N: # of channel
-    sfreq: sampling frequency
-    '''
+def load_data(data, sfreq = 2000, ch_types = ['eeg'], ch_names = ['V1'], add_noise=True, noise_sd=1):
+    # add noise to the data
+    if add_noise:
+        noise = np.random.normal(size=(len(data),))*noise_sd
+        data += noise
+    # convert the data into mne.Raw()
     info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
     raw = mne.io.RawArray(data, info)
     return raw
 
-def compute_DFA(data, filter = True, l_freq=8, h_freq=16,fit_interval=[5,30], compute_interval=[1,120],overlap=True,channels_to_ignore=None,method="richard"):
+def compute_DFA(data, filter = True, l_freq=8, h_freq=16,fit_interval=[5,30], compute_interval=[1,120],overlap=True,channels_to_ignore=None,method="richard",return_fitting=False):
     '''
     INPUT:
     data: An instance of mne.Raw(). Could be created by load_data().
@@ -77,7 +70,7 @@ def compute_DFA(data, filter = True, l_freq=8, h_freq=16,fit_interval=[5,30], co
                 pass
 
             signal_for_channel = signal[ch_idx, :]
-
+        
             if method=="richard":
                 for i_window_size in range(len(window_sizes)):
                     if overlap==True:
@@ -106,16 +99,21 @@ def compute_DFA(data, filter = True, l_freq=8, h_freq=16,fit_interval=[5,30], co
 
                 x=np.log10(window_sizes[fit_interval_first_window:fit_interval_last_window])
                 y=np.log10(fluctuations[ch_idx,fit_interval_first_window:fit_interval_last_window])
-                model = np.polyfit(x, y, 1)
+                if return_fitting:
+                    model, residual, _, _, _ = np.polyfit(x, y, 1, full=True)
+                else:
+                    model = np.polyfit(x, y, 1)
                 dfa_array[ch_idx]=model[0]
-                print(ch_idx)
 
             elif method=="nolds":
                 # nolds algorithm for computing dfa
                 dfa_array[ch_idx],fluctuations_2d = nolds.dfa(signal_for_channel,nvals=window_sizes,overlap=overlap,debug_data=True)
                 fluctuations[ch_idx,:] = fluctuations_2d[1]
-
-    return (dfa_array, fluctuations)
+                
+    if (method=='richard') & return_fitting:
+        return (dfa_array, fluctuations, x, y, model, residual)
+    else:
+        return (dfa_array, fluctuations)
 
 def _create_window_indices(length_signal, length_window, window_offset):
 

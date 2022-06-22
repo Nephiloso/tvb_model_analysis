@@ -1,9 +1,12 @@
 from one_region_simu import *
 import matplotlib.pyplot as plt
-import scipy
+import dfa
+from scipy.signal import welch, hamming, find_peaks
+from utils import *
 
-def eva_limit_cycle(params, Fs=2**-1):
-    '''Check whether the trace on phase plane forms a limit cycle with size < ~15Hz. Within 210ms, there should be more than 3 peaks in the trace, i.e. 3 periods within 210ms -> 15Hz'''
+def eva_limit_cycle(params, dt=2**-1):
+    '''Check whether the trace on phase plane forms a limit cycle with size < ~15Hz. Within 210ms, there should be more than 3 peaks in the trace, i.e. 3 periods within 210ms -> 15Hz
+       Not successful. Adandoned.'''
     region = config_one_region()
     surface = config_surface(region)
     sim = config_simulator(params, region, surface, integ_mode='deterministic', simu_length=210)
@@ -12,47 +15,69 @@ def eva_limit_cycle(params, Fs=2**-1):
     savg = np.squeeze(np.array(savg_data))
     
     # Check number of peaks to determin whether it's periodic or monotonic
-    waive_length = int(5/Fs) # Leaving out the first 5ms to get rid of artifact from the random seed
-    x_peak = scipy.signal.find_peaks(savg[waive_length:])
+    waive_length = int(5/dt) # Leaving out the first 5ms to get rid of artifact from the random seed
+    x_peak = find_peaks(savg[waive_length:])
     if len(x_peak[0])<3:
         return 2
     plot_result(savg_t,savg, peaks=x_peak[0]+waive_length)
     return None
-    
-def get_score(result_name):
+
+def dfa_analysis(result_name, dt=1, not_remove = False):
     df = pd.read_csv(result_name, header = None)
     data = df[1].to_numpy()
-    raw = dfa.load_data([data])
     if sum(np.isnan(data))>0:  # get rid of unrealistic trials with NaN
         os.remove(result_name)
         return 2
-    R , _ = dfa.compute_DFA(raw)
-    if R>0.7 and R<1:
-        print('Criticality! R=%d'%R, flush=True)
-        sys.stdout.flush()
-    return abs(R-0.85)[0]
+    bands = [[0.5,4],[4,8],[8,16],[16,30],[30,100]]
+    R = []
+    peak = get_psd_peak(data, dt=dt)
+    for i in range(len(bands)):
+        raw = dfa.load_data([data], sfreq = 1000/dt)
+        R0 , _ = dfa.compute_DFA(raw, l_freq=bands[i][0], h_freq=bands[i][1])
+        R.append(R0)
+        if (peak > bands[i][0]) & (peak < bands[i][1]):
+            band = i
+        del raw
+    raw = dfa.load_data([data], sfreq = 1000/dt)
+    R0 , _ = dfa.compute_DFA(raw,filter_data=False)
+    R.append(R0)
+    dfa_all = {'delta':R[0][0],'theta':R[1][0],'alpha':R[2][0],'beta':R[3][0], 'gamma':R[4][0],'raw':R[5][0]}
+    penalty0 = 0.87  # penalty for delta, beta, gamma
+    penalty1 = 0.92  # penalty for theta
 
-def plot_result(time, signal, interval=[], t_unit='ms', peaks=[]):
-    #Plot region averaged time series
-    fig = plt.figure(figsize=(15,5))
-    ax = fig.add_subplot(111)
-    if interval:
-        if signal.ndim == 4:
-            ax.plot(time[interval[0]:interval[-1]], signal[interval[0]:interval[-1], 0, :, 0])
-        elif signal.ndim == 1:
-            ax.plot(time[interval[0]:interval[-1]], signal[interval[0]:interval[-1]])
-        else:
-            print("Dimension should be 4 or 1!")
-            return None
+    if R[band] > R[5]:
+        dfa0 = R[band]
     else:
-        ax.plot(time,signal)
-    if np.any(peaks):
-        if interval:
-            x = peaks[peaks>interval[0]]
-            y = peaks[peaks<interval[1]]
-            np.intersect1d(x,y)
-        plt.scatter(time[peaks], signal[peaks],color='r',linewidths=0.1)
-    plt.title("Region average - Possible limited cycle")
-    plt.xlabel("time/"+t_unit)
-    #Show them
-    plt.show()
+        dfa0 = R[5]
+    dfa_all['dfa_this_trial'] = dfa0[0]
+    if (band!=2) & (band!=1) & (band!=3):
+        score = abs(dfa0*penalty0-0.85)[0]
+    elif (band==1) or (band==3):
+        score = abs(dfa0*penalty1-0.85)[0]
+    
+    if (dfa0<0.75) and not not_remove:
+        os.remove(result_name)
+    return (score, dfa_all, peak)
+
+    
+def get_psd(data, fs):
+    nfft= 2048
+    overlap = 64
+    f, Pxxf = welch(data, fs, window=hamming(nfft), noverlap=overlap, nfft=nfft, return_onesided=True, scaling='density')
+    return (f, Pxxf)
+
+def get_psd_peak(data, **kwargs):
+    '''Get the frequency where the PSD has a peak'''
+    if list(kwargs.keys())[0] == ('fs' or 'Fs'):
+        fs = list(kwargs.values())[0]
+    elif list(kwargs.keys())[0] == ('dt'):
+        fs = 1000/list(kwargs.values())[0]
+    else:
+        raise Exception("Should specify frequency by providing arguement 'fs' or 'dt'.")
+    f, Pxxf = get_psd(data, fs)
+    idx1 = (np.abs(f - 100)).argmin()
+    idx0 = (np.abs(f - 0.5)).argmin()
+    if f[idx0]<0.5:
+        idx0+=1
+    peak_idx = np.argmax(Pxxf[idx0:idx1])
+    return f[peak_idx+idx0]
