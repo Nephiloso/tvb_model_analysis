@@ -97,11 +97,13 @@ def config_one_region():
     return one_region
 
 
-def config_surface(region, surface = False, folder_path='/mnt/user/drive/My Libraries/tutorials&explorations/data/cortex/', source_file='cortex_180.zip', mapping_file='regionMapping_180_1.txt', local_file='local_connectivity_180.mat'):
+def config_surface(region, surface = False, folder_path='', source_file='cortex_177.zip', mapping_file='regionMapping_177_1.txt', local_file='local_connectivity_177.mat'):
     '''
     Configure the V1 cortex.
-    # TODO Change the name of function into config_cortex and and another function to configure the surface!
     '''
+    if folder_path=='':
+        pkg_path = os.path.dirname(dfa.__file__)[:os.path.dirname(dfa.__file__).find('model')]
+        folder_path = os.path.join(pkg_path,'model/surface_data')
     source_path = os.path.join(folder_path, source_file)
     mapping_path = os.path.join(folder_path, mapping_file)
     local_connectivity_path = os.path.join(folder_path, local_file)
