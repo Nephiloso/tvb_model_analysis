@@ -15,14 +15,14 @@ def load_data(data, sfreq = 2000, ch_types = ['eeg'], ch_names = ['V1'], add_noi
     raw = mne.io.RawArray(data, info)
     return raw
 
-def compute_DFA(data, filter = True, l_freq=8, h_freq=16,fit_interval=[5,30], compute_interval=[1,120],overlap=True,channels_to_ignore=None,method="richard",return_fitting=False):
+def compute_DFA(data, filter_data = True, l_freq=8, h_freq=16,fit_interval=[5,30], compute_interval=[1,120],overlap=True,channels_to_ignore=None,method="richard",return_fitting=False):
     '''
     INPUT:
     data: An instance of mne.Raw(). Could be created by load_data().
     filter: Wether to filter the signal with FIR filter.
     methods: 'righard' or 'nolds'. 'richard' is more closed to the result of matlab script.
     '''
-    if filter:
+    if filter_data:
         # filter the data
         data.filter(l_freq, h_freq, fir_window='hamming', fir_design="firwin", verbose=0)
 

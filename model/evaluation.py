@@ -4,6 +4,7 @@ import dfa
 from scipy.signal import welch, hamming, find_peaks
 from utils import *
 
+BANDS = [[0.5,4],[4,8],[8,16],[16,30],[30,100]]
 def eva_limit_cycle(params, dt=2**-1):
     '''Check whether the trace on phase plane forms a limit cycle with size < ~15Hz. Within 210ms, there should be more than 3 peaks in the trace, i.e. 3 periods within 210ms -> 15Hz
        Not successful. Adandoned.'''
@@ -28,14 +29,13 @@ def dfa_analysis(result_name, dt=1, not_remove = False):
     if sum(np.isnan(data))>0:  # get rid of unrealistic trials with NaN
         os.remove(result_name)
         return 2
-    bands = [[0.5,4],[4,8],[8,16],[16,30],[30,100]]
     R = []
     peak = get_psd_peak(data, dt=dt)
-    for i in range(len(bands)):
+    for i in range(len(BANDS)):
         raw = dfa.load_data([data], sfreq = 1000/dt)
-        R0 , _ = dfa.compute_DFA(raw, l_freq=bands[i][0], h_freq=bands[i][1])
+        R0 , _ = dfa.compute_DFA(raw, l_freq=BANDS[i][0], h_freq=BANDS[i][1])
         R.append(R0)
-        if (peak > bands[i][0]) & (peak < bands[i][1]):
+        if (peak > BANDS[i][0]) & (peak < BANDS[i][1]):
             band = i
         del raw
     raw = dfa.load_data([data], sfreq = 1000/dt)
@@ -59,6 +59,23 @@ def dfa_analysis(result_name, dt=1, not_remove = False):
         os.remove(result_name)
     return (score, dfa_all, peak)
 
+def get_score(dfa_all, peak):
+    for i in range(len(BANDS)):
+        if (peak > BANDS[i][0]) & (peak < BANDS[i][1]):
+            band = i
+        penalty0 = 0.87  # penalty for delta, beta, gamma
+    penalty1 = 0.92  # penalty for theta
+    R = list(dfa_all.values())
+    if R[band] > R[5]:
+        dfa0 = R[band]
+    else:
+        dfa0 = R[5]
+    dfa_all['dfa_this_trial'] = dfa0
+    if (band!=2) & (band!=1) & (band!=3):
+        score = abs(dfa0*penalty0-0.85)
+    elif (band==1) or (band==3):
+        score = abs(dfa0*penalty1-0.85)
+    return score
     
 def get_psd(data, fs):
     nfft= 2048
