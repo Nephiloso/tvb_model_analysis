@@ -54,7 +54,9 @@ def dfa_analysis(result_name, dt=1, not_remove = False):
         score = abs(dfa0*penalty0-0.85)[0]
     elif (band==1) or (band==3):
         score = abs(dfa0*penalty1-0.85)[0]
-    
+    elif band==2:
+        score = dfa0[0]
+
     if (dfa0<0.75) and not not_remove:
         os.remove(result_name)
     return (score, dfa_all, peak)
@@ -75,6 +77,8 @@ def get_score(dfa_all, peak):
         score = abs(dfa0*penalty0-0.85)
     elif (band==1) or (band==3):
         score = abs(dfa0*penalty1-0.85)
+    elif band==2:
+        score = dfa0
     return score
     
 def get_psd(data, fs):

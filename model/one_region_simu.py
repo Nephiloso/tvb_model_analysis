@@ -78,7 +78,13 @@ def config_params(params=[]):
 
 def config_one_region():
     # region-based modeling
-    white_matter = connectivity.Connectivity.from_file()
+    try:
+        white_matter = connectivity.Connectivity.from_file()
+    except Exception:
+        pkg_path = os.path.dirname(dfa.__file__)[:os.path.dirname(dfa.__file__).find('model')]
+        con_path = os.path.join(pkg_path,'model/surface_data/connectivity_76.zip')
+        white_matter = connectivity.Connectivity.from_file(source_file=con_path)
+    
     tract_lengths = white_matter.tract_lengths[73:74,73:74]
     region_labels = white_matter.region_labels[73:74]
     centres = white_matter.centres[73:74]
@@ -97,7 +103,7 @@ def config_one_region():
     return one_region
 
 
-def config_surface(region, surface = False, folder_path='', source_file='cortex_177.zip', mapping_file='regionMapping_177_1.txt', local_file='local_connectivity_177.mat'):
+def config_surface(region, surface = False, folder_path='', source_file='V1_177.zip', mapping_file='regionMapping_177_1.txt', local_file='local_connectivity_177.mat'):
     '''
     Configure the V1 cortex.
     '''
@@ -203,41 +209,10 @@ def config_simulator(params, region, surface, integ_mode='stochastic', simu_leng
 
 def gen_simu_name(data_folder, params):
     '''Name the file systemetically'''
-    # TODO make a decorator?
     today = date.today().isoformat()
     simu_name = today +'_c_ee'+str(params['c_ee'][0])+'_c_ei'+str(params['c_ei'][0])
     result_name = os.path.join(data_folder,simu_name+"_results.csv")
-    if not check_simu_name(data_folder, result_name):
-        return result_name
-    else:
-        simu_name = today +'_c_ee'+str(params['c_ee'][0])+'_c_ei'+str(params['c_ei'][0])+'_c_ie'+str(params['c_ie'][0])
-        result_name = os.path.join(data_folder,simu_name+"_results.csv")
-        if not check_simu_name(data_folder, result_name):
-            return result_name
-        else:
-            simu_name = today +'_c_ee'+str(params['c_ee'][0])+'_c_ei'+str(params['c_ei'][0])+'_c_ie'+str(params['c_ie'][0])+'_c_ii'+str(params['c_ie'][0])
-            result_name = os.path.join(data_folder,simu_name+"_results.csv")
-            if not check_simu_name(data_folder, result_name):
-                return result_name
-            else:
-                simu_name = today +'_c_ee'+str(params['c_ee'][0])+'_c_ei'+str(params['c_ei'][0])+'_c_ie'+str(params['c_ie'][0])+'_c_ii'+str(params['c_ie'][0])+'_tau_e'+str(params['tau_e'][0])
-                result_name = os.path.join(data_folder,simu_name+"_results.csv")
-                if not check_simu_name(data_folder, result_name):
-                    return result_name
-                else:
-                    from datetime import datetime
-                    now = datetime.now()
-                    current_time = now.strftime("%H:%M")
-                    simu_name = today +'_c_ee'+str(params['c_ee'][0])+'_c_ei'+str(params['c_ei'][0])+'_c_ie'+str(params['c_ie'][0])+'_c_ii'+str(params['c_ie'][0])+'_tau_e'+str(params['tau_e'][0]+current_time)
-                    result_name = os.path.join(data_folder,simu_name+"_results.csv")
-                    return result_name
-    
-def check_simu_name(data_folder, result_name):
-    for _, _, files in os.walk(data_folder):
-        for file in files:
-            if file.__contains__(result_name):
-                return True
-    return False
+    return result_name
 
 def run_simulation(sim, params, check_point=20000, return_signal=False, data_folder=''):
     savg_data = []

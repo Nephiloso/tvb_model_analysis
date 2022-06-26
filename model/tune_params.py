@@ -10,8 +10,8 @@ import pdb
 import sys
 from CustomLoggerCallback import *
 
-data_folder = os.path.join(os.getcwd(), 'data')
-exp_name = '20220623_trial1'
+data_folder ='/scratch/pwutmp'
+exp_name = '20220625_trial1'
 ray_folder = os.path.join(data_folder,'ray_results')
 exp_folder = os.path.join(ray_folder, exp_name)
 restore_folder = exp_folder
@@ -35,13 +35,13 @@ def run_model(config):
     tune.report(score=score, dfa_all = dfa_all, f_peak=f_peak)
     
 smoke_test = False
-restore = True
+restore = False
 nsample = -1
 debug = False
 bayesopt = BayesOptSearch(metric="score",
                           mode="min",
-                          points_to_evaluate=[{"nsig":0.0001,"sigma": 0.3,"c_ee": 8, 'c_ie':8.5}],
-                          random_search_steps=150)
+                          points_to_evaluate=[{"nsig":0.0008,"sigma": 0.3,"c_ee": 8, 'c_ie':8.5}],
+                          random_search_steps=200)
 # pdb.set_trace()
 # if restore:
 #     bayesopt.restore(os.path.join(restore_folder, 'baye_checkpoint.pkl'))
@@ -53,7 +53,7 @@ analysis = tune.run(run_model,
                     name = exp_name,
                     local_dir=ray_folder,
                     search_alg=bayesopt,
-                    # config=config,
+                    config=config,
                     metric="score",
                     mode="min",
                     progress_reporter=tune.CLIReporter(metric_columns='score',parameter_columns=config),
@@ -62,4 +62,4 @@ analysis = tune.run(run_model,
                     # resume= 'ERRORED_ONLY', # do this when you whant to resume a stopped experiment option:'ERRORED_ONLY'
                     resume= True,
                     # max_concurrent_trials = 3,
-                    num_samples=2 if smoke_test else nsample)
+                    num_samples=5 if smoke_test else nsample)
