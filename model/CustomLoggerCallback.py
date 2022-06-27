@@ -31,7 +31,9 @@ class CustomLoggerCallback(LoggerCallback):
                 continue
             if isinstance(v, (np.ndarray,)):
                 result[k] = v.tolist()
-        self._file.write(json.dumps(result))
+            elif isinstance(v, dict):
+		result[k] = str(result[k])
+	self._file.write(json.dumps(result))
         self.summarywriter.add_scalar('score', result['score'], len(self.bayesopt._buffered_trial_results)+1)
         self.summarywriter.add_scalar('dfa_delta', result['dfa_all']['delta'], len(self.bayesopt._buffered_trial_results)+1)
         self.summarywriter.add_scalar('dfa_theta', result['dfa_all']['theta'], len(self.bayesopt._buffered_trial_results)+1)

@@ -4,7 +4,7 @@ from datetime import date
 import os
 import dfa
 import numpy as np
-
+import SinglePulse
 '''
 This script is a neural mass model for V1.
 '''

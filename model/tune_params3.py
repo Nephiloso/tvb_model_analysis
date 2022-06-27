@@ -10,8 +10,8 @@ import pdb
 import sys
 from CustomLoggerCallback import *
 
-data_folder ='/scratch/pwutmp'
-exp_name = '20220625_trial1'
+data_folder ='/scratch/pwutmp3'
+exp_name = '20220625_trial3'
 ray_folder = os.path.join(data_folder,'ray_results')
 exp_folder = os.path.join(ray_folder, exp_name)
 restore_folder = exp_folder
@@ -19,9 +19,9 @@ os.makedirs(exp_folder, exist_ok=True)
 
 config={
     'nsig':tune.uniform(0.0001,0.004),
-    'sigma': tune.uniform(0.2, 0.5),
-        "c_ee": tune.uniform(8, 18),
-        'c_ie': tune.uniform(7.5, 10)}
+    'sigma': tune.uniform(0.3, 0.5),
+        "c_ee": tune.uniform(12, 18),
+        'c_ie': tune.uniform(8, 10)}
 
 def run_model(config):
     params = config_params({"sigma":config['sigma'], "c_ee":config['c_ee'],'c_ie':config['c_ie']})
@@ -32,16 +32,15 @@ def run_model(config):
     sim = config_simulator(params, region, surface)
     result_name = run_simulation(sim, params, check_point=12500,data_folder=data_folder)
     score, dfa_all, f_peak = dfa_analysis(result_name)
-    tune.report(score=score, dfa_all = dfa_all, f_peak=f_peak,params=params)
+    tune.report(score=score, dfa_all = dfa_all, f_peak=f_peak)
     
 smoke_test = False
 restore = False
-nsample = -1
+nsample = 65
 debug = False
 bayesopt = BayesOptSearch(metric="score",
                           mode="min",
-                          points_to_evaluate=[{"nsig":0.0008,"sigma": 0.3,"c_ee": 8, 'c_ie':8.5}],
-                          random_search_steps=200)
+                          random_search_steps=60)
 # pdb.set_trace()
 # if restore:
 #     bayesopt.restore(os.path.join(restore_folder, 'baye_checkpoint.pkl'))
@@ -60,6 +59,6 @@ analysis = tune.run(run_model,
                     callbacks=[CustomLoggerCallback(bayesopt=bayesopt, filefolder=exp_folder, filename= "log_test.txt")],
                     stop={'score':0.06},
                     # resume= 'ERRORED_ONLY', # do this when you whant to resume a stopped experiment option:'ERRORED_ONLY'
-                    resume= True,
+                    resume= False,
                     # max_concurrent_trials = 3,
                     num_samples=5 if smoke_test else nsample)
