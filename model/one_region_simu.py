@@ -4,12 +4,13 @@ from datetime import date
 import os
 import dfa
 import numpy as np
-import SinglePulse
+from SinglePulse import *
+
 '''
 This script is a neural mass model for V1.
 '''
 
-def config_params(params=[]):
+def config_params(**params):
     '''
     # TODO Change the function as same form as follows:
     def default_pars(**kwargs):
@@ -34,6 +35,7 @@ def config_params(params=[]):
     ntau = 0 # 0.5?
     sigma = 0.3
     nsig = np.array([0.0004])
+    stim_size = 90
     k_e = np.array([1.0])            #Max value of excitatory response function
     k_i = np.array([2])            #Max value of inhibitory response function
     r_e = np.array([1.0])            #Excitatory refractory period
@@ -58,18 +60,17 @@ def config_params(params=[]):
     Q = np.array([0.0])              #External stimulus to the inhibitory population
     shift_sigmoid = np.array([False])
 
-    DEFAULT_PARAMS = {'ntau': ntau, 'sigma': sigma, 'nsig': nsig, 'k_e':k_e, 'k_i':k_i, 'r_e':r_e, 'r_i':r_i, 'c_ee':c_ee, 'c_ei':c_ei,
+    DEFAULT_PARAMS = {'ntau': ntau, 'sigma': sigma, 'nsig': nsig, 'stim_size':stim_size, 'k_e':k_e, 'k_i':k_i, 'r_e':r_e, 'r_i':r_i, 'c_ee':c_ee, 'c_ei':c_ei,
                       'c_ie':c_ie, 'c_ii':c_ii, 'tau_e':tau_e, 'tau_i':tau_i,
                       'a_e':a_e, 'b_e':b_e, 'c_e':c_e, 'a_i':a_i, 'b_i':b_i, 'c_i':c_i,
                       'theta_e':theta_e, 'theta_i':theta_i, 'alpha_e':alpha_e, 'alpha_i':alpha_i,
                       'P':P, 'Q':Q, 'shift_sigmoid':shift_sigmoid}
+    NUMBS_KEY = ['ntau', 'sigma', 'stim_size']
     # update the params
     if params:
         for i,j in enumerate(params.keys()):
             if j in DEFAULT_PARAMS:
-                if j == 'ntau':
-                    DEFAULT_PARAMS[j] = params[j]
-                elif j == 'sigma':
+                if j in NUMBS_KEY:
                     DEFAULT_PARAMS[j] = params[j]
                 else:
                     DEFAULT_PARAMS[j] = np.array([params[j]])
@@ -84,7 +85,7 @@ def config_one_region():
         pkg_path = os.path.dirname(dfa.__file__)[:os.path.dirname(dfa.__file__).find('model')]
         con_path = os.path.join(pkg_path,'model/surface_data/connectivity_76.zip')
         white_matter = connectivity.Connectivity.from_file(source_file=con_path)
-    
+
     tract_lengths = white_matter.tract_lengths[73:74,73:74]
     region_labels = white_matter.region_labels[73:74]
     centres = white_matter.centres[73:74]
@@ -154,15 +155,37 @@ def config_model(params):
                         )
     return mod
 
-def config_stimulus(cortex, stim_size, onset=10, alpha=0.5, beta=2):
+def config_stimulus(params, cortex, **args):
     import random
-    eqn_t = equations.Alpha()  # belongs to a family of exponential function, used for visual stimulus # TODO Literature search!
-    eqn_t.parameters['onset'] = onset  # ! Time point of stimulus onset!
-    eqn_t.parameters['alpha'] = alpha
-    eqn_t.parameters['beta'] = beta
+    # setup the stimulus - default: SinglePulse
+    stim_size = params['stim_size']
+    eqn_t = SinglePulse()
+    eqn_t.parameters['onset'] = 500
+    eqn_t.parameters['amp'] = 0.001
+    eqn_t.parameters['dT'] = 0.1
+    if args:
+        if args['mode']=='AlphaFunction':
+            eqn_t = equations.Alpha()  # belongs to a family of exponential function, used for visual stimulus 
+            eqn_t.parameters['onset'] = 500  # ! Time point of stimulus onset!
+            eqn_t.parameters['alpha'] = 0.5
+            eqn_t.parameters['beta'] = 2
+            if 'onset' in args.keys():
+                eqn_t.parameters['onset'] = args['onset']
+            if 'alpha' in args.keys():
+                eqn_t.parameters['alpha'] = args['alpha']
+            if 'beta' in args.keys():
+                eqn_t.parameters['beta'] = args['beta']
+        elif args['mode']=='SinglePulse':
+            if 'onset' in args.keys():
+                eqn_t.parameters['onset'] = args['onset']
+            if 'alpha' in args.keys():
+                eqn_t.parameters['amp'] = args['amp']
+            if 'beta' in args.keys():
+                eqn_t.parameters['dT'] = args['dT']
     
     eqn_s = equations.DiscreteEquation()
     
+    deck = list(range(1, cortex.surface.number_of_vertices))
     random.shuffle(deck)
     focal = np.array(deck[:stim_size])
     stimulus = patterns.StimuliSurface(surface=cortex.surface,

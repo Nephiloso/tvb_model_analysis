@@ -24,7 +24,7 @@ config={
         'c_ie': tune.uniform(7.5, 10)}
 
 def run_model(config):
-    params = config_params({"sigma":config['sigma'], "c_ee":config['c_ee'],'c_ie':config['c_ie']})
+    params = config_params(sigma=config['sigma'], c_ee=config['c_ee'],c_ie=config['c_ie'])
     # score = eva_limit_cycle(params)
     # if not score:
     region = config_one_region()
