@@ -5,8 +5,6 @@ from ray.tune.logger import LoggerCallback
 from tensorboardX import SummaryWriter
 from shutil import rmtree
 import os
-import numpy as np
-import datetime
 
 class CustomLoggerCallback(LoggerCallback):
     """Put the results of all trails in the same file"""
@@ -31,9 +29,7 @@ class CustomLoggerCallback(LoggerCallback):
                 continue
             if isinstance(v, (np.ndarray,)):
                 result[k] = v.tolist()
-            elif isinstance(v, dict):
-		result[k] = str(result[k])
-	self._file.write(json.dumps(result))
+        self._file.write(json.dumps(result))
         self.summarywriter.add_scalar('score', result['score'], len(self.bayesopt._buffered_trial_results)+1)
         self.summarywriter.add_scalar('dfa_delta', result['dfa_all']['delta'], len(self.bayesopt._buffered_trial_results)+1)
         self.summarywriter.add_scalar('dfa_theta', result['dfa_all']['theta'], len(self.bayesopt._buffered_trial_results)+1)

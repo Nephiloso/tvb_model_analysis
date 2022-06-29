@@ -5,23 +5,6 @@ from scipy.signal import welch, hamming, find_peaks
 from utils import *
 
 BANDS = [[0.5,4],[4,8],[8,16],[16,30],[30,100]]
-def eva_limit_cycle(params, dt=2**-1):
-    '''Check whether the trace on phase plane forms a limit cycle with size < ~15Hz. Within 210ms, there should be more than 3 peaks in the trace, i.e. 3 periods within 210ms -> 15Hz
-       Not successful. Adandoned.'''
-    region = config_one_region()
-    surface = config_surface(region)
-    sim = config_simulator(params, region, surface, integ_mode='deterministic', simu_length=210)
-    savg_time, savg_data = run_simulation(sim, params, return_signal=True)
-    savg_t = np.squeeze(np.array(savg_time))
-    savg = np.squeeze(np.array(savg_data))
-    
-    # Check number of peaks to determin whether it's periodic or monotonic
-    waive_length = int(5/dt) # Leaving out the first 5ms to get rid of artifact from the random seed
-    x_peak = find_peaks(savg[waive_length:])
-    if len(x_peak[0])<3:
-        return 2
-    plot_result(savg_t,savg, peaks=x_peak[0]+waive_length)
-    return None
 
 def dfa_analysis(result_name, dt=1, not_remove = False):
     df = pd.read_csv(result_name, header = None)
@@ -54,9 +37,7 @@ def dfa_analysis(result_name, dt=1, not_remove = False):
         score = abs(dfa0*penalty0-0.85)[0]
     elif (band==1) or (band==3):
         score = abs(dfa0*penalty1-0.85)[0]
-    elif band==2:
-        score = dfa0[0]
-
+    
     if (dfa0<0.75) and not not_remove:
         os.remove(result_name)
     return (score, dfa_all, peak)
@@ -77,8 +58,6 @@ def get_score(dfa_all, peak):
         score = abs(dfa0*penalty0-0.85)
     elif (band==1) or (band==3):
         score = abs(dfa0*penalty1-0.85)
-    elif band==2:
-        score = dfa0
     return score
     
 def get_psd(data, fs):
@@ -102,3 +81,22 @@ def get_psd_peak(data, **kwargs):
         idx0+=1
     peak_idx = np.argmax(Pxxf[idx0:idx1])
     return f[peak_idx+idx0]
+
+
+def eva_limit_cycle(params, dt=2**-1):
+    '''Check whether the trace on phase plane forms a limit cycle with size < ~15Hz. Within 210ms, there should be more than 3 peaks in the trace, i.e. 3 periods within 210ms -> 15Hz
+       Not successful. Adandoned.'''
+    region = config_one_region()
+    surface = config_surface(region)
+    sim = config_simulator(params, region, surface, integ_mode='deterministic', simu_length=210)
+    savg_time, savg_data = run_simulation(sim, params, return_signal=True)
+    savg_t = np.squeeze(np.array(savg_time))
+    savg = np.squeeze(np.array(savg_data))
+    
+    # Check number of peaks to determin whether it's periodic or monotonic
+    waive_length = int(5/dt) # Leaving out the first 5ms to get rid of artifact from the random seed
+    x_peak = find_peaks(savg[waive_length:])
+    if len(x_peak[0])<3:
+        return 2
+    plot_result(savg_t,savg, peaks=x_peak[0]+waive_length)
+    return None

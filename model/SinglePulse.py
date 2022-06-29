@@ -1,6 +1,5 @@
 from tvb.datatypes.equations import TemporalApplicableEquation
 from tvb.basic.neotraits.api import Attr, Final
-
 class SinglePulse(TemporalApplicableEquation):
     """
     A pulse train , offset with respect to the time axis.
@@ -20,5 +19,5 @@ class SinglePulse(TemporalApplicableEquation):
 
     parameters = Attr(
         field_type=dict,
-        default=lambda: {"dT": 0.1, "amp": 0.001, "onset": 500},
+        default=lambda: {"dT": 0.1, "amp": 0.001, "onset": 300},
         label="Pulse Train Parameters")

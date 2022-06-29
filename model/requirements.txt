@@ -1,6 +1,3 @@
-#tvb-library
-#tvb-framework
-pandas
 ray[tune]
 bayesian-optimization
 mne

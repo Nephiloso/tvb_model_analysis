@@ -13,9 +13,9 @@ config={
         "c_ee": tune.grid_search([i for i in range(6,23,4)]),
         "c_ei": tune.grid_search([i for i in range(6,23,4)])}
 def run_model(config):
-    params = config_params({"c_ee":config['c_ee'],'c_ei':config['c_ei'],'nsig':0.0004, 'sigma':1,
-                        'c_ie': 9.477017434965216,'c_ii':7.4836638161762013,'a_e':1.3, 'b_e':2.8,
-                        'c_e':7.0,'a_i':2.0,'alpha_e':1})
+    params = config_params(c_ee=config['c_ee'],c_ei=config['c_ei'],nsig=0.0004, sigma=1,
+                        c_ie= 9.477017434965216,c_ii=7.4836638161762013,a_e=1.3, b_e=2.8,
+                        c_e=7.0,a_i=2.0,alpha_e=1)
     region = config_one_region()
     surface = config_surface(region)
     sim = config_simulator(params, region, surface)
