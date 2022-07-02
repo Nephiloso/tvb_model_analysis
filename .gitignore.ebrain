@@ -1,3 +1,6 @@
 *data*
 core.*
 *.swp
+data/*
+/data
+*.ipynb_checkpoints*
