@@ -45,7 +45,8 @@ class RandomPulses(TemporalApplicableEquation):
                 external_input_times = external_input_times[:i]
                 break
         df = pd.DataFrame({'stim_idx':external_input_times})
-        df.to_csv(self.parameters['temp_path'], index=False, header=False)
+        if self.parameters['temp_path'] !='':
+            df.to_csv(self.parameters['temp_path'], index=False, header=False)
         return external_input_times
     
     def evaluate(self,var):

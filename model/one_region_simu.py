@@ -157,7 +157,7 @@ def config_model(params):
                         )
     return mod
 
-def config_stimulus(params, cortex, **kwargs):
+def config_stimulus(params, cortex, save_stim=True, **kwargs):
     import random
     # setup the stimulus - default: SinglePulse
     stim_size = params['stim_size']
@@ -190,8 +190,7 @@ def config_stimulus(params, cortex, **kwargs):
             eqn_t.parameters['onset'] = 750
             eqn_t.parameters['num'] = 998
             eqn_t.parameters['time_intv'] = 1000
-            temp_path = get_stim_temp_path(params)
-            eqn_t.parameters['temp_path'] = temp_path
+            eqn_t.parameters['temp_path'] = ''
             if 'amp' in kwargs.keys():
                 eqn_t.parameters['amp'] = kwargs['amp']
             if 'onset' in kwargs.keys():
@@ -200,7 +199,9 @@ def config_stimulus(params, cortex, **kwargs):
                 eqn_t.parameters['num'] = kwargs['num']
             if 'time_intv' in kwargs.keys():
                 eqn_t.parameters['time_intv'] = kwargs['time_intv']
-            if 'temp_path' in kwargs.keys():
+            if ('temp_path' in kwargs.keys()) & save_stim:
+                temp_path = get_stim_temp_path(params)
+                eqn_t.parameters['temp_path'] = temp_path
                 if os.isdir(kwargs['temp_path']):
                     eqn_t.parameters['temp_path'] = kwargs['temp_path']
     
