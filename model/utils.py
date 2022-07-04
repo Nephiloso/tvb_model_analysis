@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+import logging
 
 def read_result(result_name):
     df = pd.read_csv(result_name, header = None)
@@ -17,3 +18,16 @@ def get_result_names(folder_path):
             result_names.append(os.path.join(folder_path, file))
             
     return result_names
+
+def get_data_folder_path(folder_name='data'):
+    '''
+    This scipt is only used on the ebrain.
+    '''
+    pkg_path = os.getcwd()[:os.getcwd().find('model')]
+    con_path = os.path.join(pkg_path,folder_name)
+    if os.path.isdir(con_path):
+        return con_path
+    else:
+        warnning_msg = "Couldn't find the data folder! Use current folder: "+os.getcwd()
+        logging.warning(warnning_msg)
+        return(os.getcwd())

@@ -34,6 +34,7 @@ def config_params(**params):
       return pars
     '''
     # default settings
+    comb = ['c_ee','c_ei']
     ntau = 0 # 0.5?
     sigma = 0.3
     nsig = np.array([0.0004])
@@ -62,12 +63,12 @@ def config_params(**params):
     Q = np.array([0.0])              #External stimulus to the inhibitory population
     shift_sigmoid = np.array([False])
 
-    DEFAULT_PARAMS = {'ntau': ntau, 'sigma': sigma, 'nsig': nsig, 'stim_size':stim_size, 'k_e':k_e, 'k_i':k_i, 'r_e':r_e, 'r_i':r_i, 'c_ee':c_ee, 'c_ei':c_ei,
+    DEFAULT_PARAMS = {'comb':comb, 'ntau': ntau, 'sigma': sigma, 'nsig': nsig, 'stim_size':stim_size, 'k_e':k_e, 'k_i':k_i, 'r_e':r_e, 'r_i':r_i, 'c_ee':c_ee, 'c_ei':c_ei,
                       'c_ie':c_ie, 'c_ii':c_ii, 'tau_e':tau_e, 'tau_i':tau_i,
                       'a_e':a_e, 'b_e':b_e, 'c_e':c_e, 'a_i':a_i, 'b_i':b_i, 'c_i':c_i,
                       'theta_e':theta_e, 'theta_i':theta_i, 'alpha_e':alpha_e, 'alpha_i':alpha_i,
                       'P':P, 'Q':Q, 'shift_sigmoid':shift_sigmoid}
-    NUMBS_KEY = ['ntau', 'sigma', 'stim_size']
+    NUMBS_KEY = ['ntau', 'sigma', 'stim_size','comb']
     # update the params
     if params:
         for i,j in enumerate(params.keys()):
@@ -201,8 +202,8 @@ def config_stimulus(params, cortex, **kwargs):
             if 'time_intv' in kwargs.keys():
                 eqn_t.parameters['time_intv'] = kwargs['time_intv']
             if 'temp_path' in kwargs.keys():
-                if os.isdir(kwargs['temp_path']):
-                    eqn_t.parameters['temp_path'] = kwargs['temp_path']
+                if os.path.isdir(kwargs['temp_path']):
+                    eqn_t.parameters['temp_path'] =get_stim_temp_path(params, kwargs['temp_path'])
     
     eqn_s = equations.DiscreteEquation()
     
@@ -251,10 +252,23 @@ def config_simulator(params, region, surface, integ_mode='stochastic', simu_leng
     # if sim.log ....Bad Simulator.integrator.noise.nsig shape...
     return sim
 
+def gen_simu_name_str(comb,param):
+    today = date.today().isoformat()
+    simu_name = today
+    for i in range(len(comb)):
+        simu_name = simu_name+'_'+comb[i]+param[i]
+    return simu_name
+
 def gen_simu_name(data_folder, params, stim = False):
     '''Name the file systemetically'''
-    today = date.today().isoformat()
-    simu_name = today +'_c_ee'+str(params['c_ee'][0])+'_c_ei'+str(params['c_ei'][0])
+    comb = params['comb']
+    param=[]
+    for com in comb:
+        if isinstance(params[com], (np.ndarray,)):
+            param.append(str(params[com][0]))
+        else:
+            param.append(str(params[com]))
+    simu_name = gen_simu_name_str(comb,param)
     if stim:
         result_name = os.path.join(data_folder,simu_name+"_stim_results.csv")
     else:
