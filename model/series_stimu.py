@@ -8,11 +8,10 @@ import sys
 from ray import tune
 import dfa
 
-data_folder = '/scratch/grid_stimu'
-config={"stim_size": tune.grid_search([1, 10, 40, 100, 120, 150, 170]),"c_ee": tune.grid_search([i for i in range(6,23,4)]),
-         "c_ei": tune.grid_search([i for i in range(6,23,4)])}
+data_folder = '/scratch/noncritical_stimu'
+config={"stim_size": tune.grid_search([1, 10, 40, 100, 120, 150, 170])}
 def run_model(config):
-    params = config_params(comb=['c_ee','c_ei','stim_size'],nsig=0.0004, stim_size=config['stim_size'], sigma=1,c_ee=config['c_ee'],c_ei=config['c_ei'],
+    params = config_params(comb=['c_ee','c_ei','stim_size'],nsig=0.0004, stim_size=config['stim_size'], sigma=1,c_ee=22,c_ei=6,
                         c_ie= 9.477017434965216,c_ii=7.4836638161762013,a_e=1.3, b_e=2.8,
                         c_e=7.0,a_i=2.0,alpha_e=1)
     region = config_one_region()
@@ -25,7 +24,7 @@ def run_model(config):
 
 analysis = tune.run(run_model,
                         verbose=3,
-                        name = 'grid_stimu',
+                        name = 'noncritical_stimu',
                         local_dir=data_folder,
                         config=config,
                         metric="score",
