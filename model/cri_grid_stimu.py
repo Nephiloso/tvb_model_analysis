@@ -7,10 +7,13 @@ from evaluation import *
 import sys
 from ray import tune
 import dfa
-
+'''
+applying stimulus to the model with a variety # of nodes for the whole parameter space.
+This is the first half of the param space.
+'''
 data_folder = '/scratch/grid_stimu'
 config={"stim_size": tune.grid_search([1, 10, 40, 100, 120, 150, 170]),"c_ee": tune.grid_search([i for i in range(6,23,4)]),
-         "c_ei": tune.grid_search([i for i in range(6,23,4)])}
+         "c_ei": tune.grid_search([i for i in range(6,15,4)])}
 def run_model(config):
     params = config_params(comb=['c_ee','c_ei','stim_size'],nsig=0.0004, stim_size=config['stim_size'], sigma=1,c_ee=config['c_ee'],c_ei=config['c_ei'],
                         c_ie= 9.477017434965216,c_ii=7.4836638161762013,a_e=1.3, b_e=2.8,

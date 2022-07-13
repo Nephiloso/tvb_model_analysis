@@ -42,10 +42,10 @@ def dfa_analysis(result_name, dt=1, not_remove = False, save_inter=False):
             df = pd.DataFrame({'time':filtered_t[0], 'data':filtered_d})
             filtered_name=result_name[:result_name.find('results.csv')]+'filtered'+str(BANDS[i][0])+'_'+str(BANDS[i][1])+'.csv'
             df.to_csv(filtered_name, mode='a', index=False, header=False)
+            del filtered_t
+            del filtered_d
+            del filtered_name
         del raw
-        del filtered_t
-        del filtered_d
-        del filtered_name
     raw = dfa.load_data([data], sfreq = 1000/dt)
     R0 , _ = dfa.compute_DFA(raw,filter_data=False)
     R.append(R0)
