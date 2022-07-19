@@ -41,9 +41,9 @@ def dfa_analysis(result_name, dt=1, not_remove = False, save_inter=False):
         if (peak > BANDS[i][0]) & (peak < BANDS[i][1]):
             band = i
         if save_inter:
-            filtered_t, filtered_d = raw[:]
-            df = pd.DataFrame({'time':filtered_t[0], 'data':filtered_d})
-            filtered_name=result_name[:result_name.find('results.csv')]+'filtered'+str(BANDS[i][0])+'_'+str(BANDS[i][1])+'.csv'
+            filtered_d, filtered_t = raw[:]
+            df = pd.DataFrame({'time':filtered_t, 'data':filtered_d[0]})
+            filtered_name=result_name[:result_name.find('results.csv')]+'envelope'+str(BANDS[i][0])+'_'+str(BANDS[i][1])+'.csv'
             df.to_csv(filtered_name, mode='a', index=False, header=False)
         del raw
         del filtered_t
@@ -53,8 +53,8 @@ def dfa_analysis(result_name, dt=1, not_remove = False, save_inter=False):
     R0 , _ = dfa.compute_DFA(raw,filter_data=False)
     R.append(R0)
     dfa_all = {'delta':R[0][0],'theta':R[1][0],'alpha':R[2][0],'beta':R[3][0], 'gamma':R[4][0],'raw':R[5][0]}
-    penalty0 = 0.87  # penalty for delta, beta, gamma
-    penalty1 = 0.92  # penalty for theta
+    penalty0 = 0.87  # penalty for delta, gamma
+    penalty1 = 0.92  # penalty for theta, beta
 
     if R[band] > R[5]:
         dfa0 = R[band]
@@ -66,7 +66,7 @@ def dfa_analysis(result_name, dt=1, not_remove = False, save_inter=False):
     elif (band==1) or (band==3):
         score = abs(dfa0*penalty1-0.85)[0]
     elif band==2:
-        score = dfa0[0]
+        score = abs(0.85 - dfa0[0])
 
     if (dfa0<0.75) and not not_remove:
         os.remove(result_name)
@@ -76,7 +76,7 @@ def get_score(dfa_all, peak):
     for i in range(len(BANDS)):
         if (peak > BANDS[i][0]) & (peak < BANDS[i][1]):
             band = i
-        penalty0 = 0.87  # penalty for delta, beta, gamma
+    penalty0 = 0.87  # penalty for delta, beta, gamma
     penalty1 = 0.92  # penalty for theta
     R = list(dfa_all.values())
     if R[band] > R[5]:
@@ -89,7 +89,7 @@ def get_score(dfa_all, peak):
     elif (band==1) or (band==3):
         score = abs(dfa0*penalty1-0.85)
     elif band==2:
-        score = dfa0
+        score = abs(0.85 - dfa0[0])
     return score
     
 def get_psd(data, fs):
