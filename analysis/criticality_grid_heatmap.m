@@ -1,6 +1,6 @@
 clear all
 M= readtable('C:\Users\wpp_1\Documents\Neurasmus\VU\Internship\report\figures\critical_grid_analysis.csv');
-delta=M.dfa_all_theta;
+delta=M.dfa_all_raw;
 c_ee = 6:4:23;
 c_ei = 6:4:23;
 
@@ -22,8 +22,8 @@ xvalues = cellstr (string(uint8(c_ei)));
 hm = heatmap(xvalues,yvalues,Z);
 xlabel('W[I->E]')
 ylabel('W[E->E]')
-title('DFA-theta band');
+title('DFA-raw signal');
 hm.YDisplayData = flipud(hm.YDisplayData);
 colormap('jet');
-caxis([0 1]);
+caxis([0.5 1]);
 colorbar

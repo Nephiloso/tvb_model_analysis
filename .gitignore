@@ -3,3 +3,4 @@ core.*
 *.swp
 .nfs*
 *.ipynb
+*.h5

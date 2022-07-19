@@ -39,14 +39,17 @@ white_noise_sd=parameters_dict('White noise sd');
 random_seed = 6;
 
 Fs = 1000;  % monitors-period: ms => Fs: Hz
-
-result = readmatrix('C:\Users\wpp_1\Downloads\2022-06-27_c_ee14_c_ei14_results.csv');  % ! heading problem
-
+data_prefix = '2022-06-26_c_ee11.57199543729056_c_ei10.307919639315172_dt1';
+data_name = [data_prefix,'_results.csv'];
+% result = readmatrix('C:\Users\wpp_1\Downloads\2022-06-27_c_ee14_c_ei14_results.csv');  % ! heading problem
+data_folder = 'C:\Users\wpp_1\Documents\Neurasmus\VU\Internship\codes\data\preprocess';
+result = readmatrix(fullfile(data_folder,data_name));
 time = result(:,1)/1000;
 v1 = result(:,2);
 % v2 = result(:,3);
 
 % raw_signal_to_process = table2array(raw_signal_to_process);
+% add_whitenoise_first = false;
 white_noise_sd = 0.1;
 if add_whitenoise_first
     noise = randn(size(v1,1),1)*white_noise_sd;

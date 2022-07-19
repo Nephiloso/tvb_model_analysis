@@ -20,14 +20,24 @@ def plot_psd(data, **kwargs):
     else:
         raise Exception("Should specify frequency by providing arguement 'fs' or 'dt'.")
     f, Pxxf = welch(data, fs, window=hamming(nfft), noverlap=overlap, nfft=nfft, return_onesided=True, scaling='density')
-
-    plt.semilogy(f, Pxxf, '-o')
-    plt.grid()
-    if f[-1] >100:
-        plt.xlim([1, 100])
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('PSD (dB/Hz)')
-    plt.show()
+    
+    if 'mode' in kwargs.keys():
+        if kwargs['mode'] == 'doublelog':            
+            plt.loglog(f, Pxxf, '-')
+            plt.grid()
+            if f[-1] >100:
+                plt.xlim([1, 100])
+            plt.xlabel('log10[Frequency (Hz)]')
+            plt.ylabel('PSD (dB/Hz)')
+            plt.show()
+    else:
+        plt.semilogy(f, Pxxf, '-')
+        plt.grid()
+        if f[-1] >100:
+            plt.xlim([1, 100])
+        plt.xlabel('Frequency (Hz)')
+        plt.ylabel('PSD (dB/Hz)')
+        plt.show()  
     return (f, Pxxf)
 
 def plot_result(time, signal, interval=[], t_unit='ms', peaks=[]):
@@ -57,3 +67,4 @@ def plot_result(time, signal, interval=[], t_unit='ms', peaks=[]):
     plt.xlabel("time/"+t_unit)
     #Show them
     plt.show()
+    return ax

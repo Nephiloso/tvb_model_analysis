@@ -124,10 +124,10 @@ end
 eval(f_str)
 
 %first fit on sorted data
-[params_sorted_data,RESID,J,COVB,MSE] = nlinfit(x,sort(y),f,initial_params(bool_vec==1));
+[params_sorted_data,RESID,J,COVB,MSE] = nlinfit(x,sort(y),f,initial_params(bool_vec==1),'options',statset('MaxIter',1e5));
 
 %then use these as starting parameters to fit the actual data
-[params_actual_data,RESID,J,COVB,MSE] = nlinfit(x,y,f,params_sorted_data);
+[params_actual_data,RESID,J,COVB,MSE] = nlinfit(x,y,f,params_sorted_data,'options',statset('MaxIter',1e5));
 
 param=params_actual_data';
 %     

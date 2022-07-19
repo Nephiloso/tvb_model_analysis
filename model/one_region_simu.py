@@ -5,6 +5,8 @@ import os
 import dfa
 import numpy as np
 from SinglePulse import *
+from RandomPulses import *
+from utils import *
 
 '''
 This script is a neural mass model for V1.
@@ -32,6 +34,7 @@ def config_params(**params):
       return pars
     '''
     # default settings
+    comb = ['c_ee','c_ei']
     ntau = 0 # 0.5?
     sigma = 0.3
     nsig = np.array([0.0004])
@@ -60,12 +63,12 @@ def config_params(**params):
     Q = np.array([0.0])              #External stimulus to the inhibitory population
     shift_sigmoid = np.array([False])
 
-    DEFAULT_PARAMS = {'ntau': ntau, 'sigma': sigma, 'nsig': nsig, 'stim_size':stim_size, 'k_e':k_e, 'k_i':k_i, 'r_e':r_e, 'r_i':r_i, 'c_ee':c_ee, 'c_ei':c_ei,
+    DEFAULT_PARAMS = {'comb':comb, 'ntau': ntau, 'sigma': sigma, 'nsig': nsig, 'stim_size':stim_size, 'k_e':k_e, 'k_i':k_i, 'r_e':r_e, 'r_i':r_i, 'c_ee':c_ee, 'c_ei':c_ei,
                       'c_ie':c_ie, 'c_ii':c_ii, 'tau_e':tau_e, 'tau_i':tau_i,
                       'a_e':a_e, 'b_e':b_e, 'c_e':c_e, 'a_i':a_i, 'b_i':b_i, 'c_i':c_i,
                       'theta_e':theta_e, 'theta_i':theta_i, 'alpha_e':alpha_e, 'alpha_i':alpha_i,
                       'P':P, 'Q':Q, 'shift_sigmoid':shift_sigmoid}
-    NUMBS_KEY = ['ntau', 'sigma', 'stim_size']
+    NUMBS_KEY = ['ntau', 'sigma', 'stim_size','comb']
     # update the params
     if params:
         for i,j in enumerate(params.keys()):
@@ -155,7 +158,7 @@ def config_model(params):
                         )
     return mod
 
-def config_stimulus(params, cortex, **args):
+def config_stimulus(params, cortex, **kwargs):
     import random
     # setup the stimulus - default: SinglePulse
     stim_size = params['stim_size']
@@ -163,25 +166,44 @@ def config_stimulus(params, cortex, **args):
     eqn_t.parameters['onset'] = 500
     eqn_t.parameters['amp'] = 0.001
     eqn_t.parameters['dT'] = 0.1
-    if args:
-        if args['mode']=='AlphaFunction':
+    if kwargs:
+        if kwargs['mode']=='AlphaFunction':
             eqn_t = equations.Alpha()  # belongs to a family of exponential function, used for visual stimulus 
             eqn_t.parameters['onset'] = 500  # ! Time point of stimulus onset!
             eqn_t.parameters['alpha'] = 0.5
             eqn_t.parameters['beta'] = 2
-            if 'onset' in args.keys():
-                eqn_t.parameters['onset'] = args['onset']
-            if 'alpha' in args.keys():
-                eqn_t.parameters['alpha'] = args['alpha']
-            if 'beta' in args.keys():
-                eqn_t.parameters['beta'] = args['beta']
-        elif args['mode']=='SinglePulse':
-            if 'onset' in args.keys():
-                eqn_t.parameters['onset'] = args['onset']
-            if 'alpha' in args.keys():
-                eqn_t.parameters['amp'] = args['amp']
-            if 'beta' in args.keys():
-                eqn_t.parameters['dT'] = args['dT']
+            if 'onset' in kwargs.keys():
+                eqn_t.parameters['onset'] = kwargs['onset']
+            if 'alpha' in kwargs.keys():
+                eqn_t.parameters['alpha'] = kwargs['alpha']
+            if 'beta' in kwargs.keys():
+                eqn_t.parameters['beta'] = kwargs['beta']
+        elif kwargs['mode']=='SinglePulse':
+            if 'onset' in kwargs.keys():
+                eqn_t.parameters['onset'] = kwargs['onset']
+            if 'alpha' in kwargs.keys():
+                eqn_t.parameters['amp'] = kwargs['amp']
+            if 'beta' in kwargs.keys():
+                eqn_t.parameters['dT'] = kwargs['dT']
+        elif kwargs['mode']=='RandomPulses':
+            eqn_t = RandomPulses()
+            eqn_t.parameters['amp'] =0.001
+            eqn_t.parameters['onset'] = 750
+            eqn_t.parameters['num'] = 998
+            eqn_t.parameters['time_intv'] = 1000
+            temp_path = get_stim_temp_path(params)
+            eqn_t.parameters['temp_path'] = temp_path
+            if 'amp' in kwargs.keys():
+                eqn_t.parameters['amp'] = kwargs['amp']
+            if 'onset' in kwargs.keys():
+                eqn_t.parameters['onset'] = kwargs['onset']
+            if 'num' in kwargs.keys():
+                eqn_t.parameters['num'] = kwargs['num']
+            if 'time_intv' in kwargs.keys():
+                eqn_t.parameters['time_intv'] = kwargs['time_intv']
+            if 'temp_path' in kwargs.keys():
+                if os.path.isdir(kwargs['temp_path']):
+                    eqn_t.parameters['temp_path'] =get_stim_temp_path(params, kwargs['temp_path'])
     
     eqn_s = equations.DiscreteEquation()
     
@@ -230,21 +252,41 @@ def config_simulator(params, region, surface, integ_mode='stochastic', simu_leng
     # if sim.log ....Bad Simulator.integrator.noise.nsig shape...
     return sim
 
-def gen_simu_name(data_folder, params):
-    '''Name the file systemetically'''
+def gen_simu_name_str(comb,param):
     today = date.today().isoformat()
-    simu_name = today +'_c_ee'+str(params['c_ee'][0])+'_c_ei'+str(params['c_ei'][0])
-    result_name = os.path.join(data_folder,simu_name+"_results.csv")
+    simu_name = today
+    for i in range(len(comb)):
+        simu_name = simu_name+'_'+comb[i]+param[i]
+    return simu_name
+
+def gen_simu_name(data_folder, params, stim = False):
+    '''Name the file systemetically'''
+    comb = params['comb']
+    param=[]
+    for com in comb:
+        if isinstance(params[com], (np.ndarray,)):
+            param.append(str(params[com][0]))
+        else:
+            param.append(str(params[com]))
+    simu_name = gen_simu_name_str(comb,param)
+    if stim:
+        result_name = os.path.join(data_folder,simu_name+"_stim_results.csv")
+    else:
+        result_name = os.path.join(data_folder,simu_name+"_results.csv")
     return result_name
 
-def run_simulation(sim, params, check_point=20000, return_signal=False, data_folder=''):
+def run_simulation(sim, params, check_point=20000, return_signal=False, data_folder='', dt=1):
     savg_data = []
     savg_time = []
-
+    
+    stim = None
+    if sim.stimulus is not None:
+        stim = True
     batch = 0
     if not return_signal:
-        result_name = gen_simu_name(data_folder, params)
-        if not check_file_exist(result_name):
+        result_name = gen_simu_name(data_folder, params, stim)
+        simu_length=sim.simulation_length/dt
+        if not check_file_exist(result_name, dt=dt, simu_length=simu_length):
             for savg in sim():
                 if not savg is None:
                     savg_time.append(savg[0][0])
@@ -283,3 +325,18 @@ def check_file_exist(result_name, dt = 1, simu_length=1000000):
         else:
             os.remove(result_name)
             return False
+        
+def get_stim_temp(sim, result_name, dt=1):
+    temp = sim.stimulus._temporal_pattern[0]
+    if temp is not None:
+        temp_name = result_name[:result_name.find('result')]+'tempo.csv'
+        if not check_file_exist(temp_name, dt=dt):
+            df = pd.DataFrame({'temp':temp})
+            df.to_csv(temp_name, index=False, header=False)
+            
+def get_stim_temp_path(params, data_folder=''):
+    if not os.path.isdir(data_folder):
+        data_folder = get_data_folder_path()
+    result_name = gen_simu_name(data_folder, params)
+    temp_name = result_name[:result_name.find('result')]+'tempo.csv'
+    return temp_name

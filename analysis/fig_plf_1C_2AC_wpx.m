@@ -13,8 +13,6 @@
 %     You should have received a copy of the GNU General Public License
 %     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-%%% !!! Test: add white noise or not!
 addpath('support_functions_matlab');
 
 data_path = 'C:\Users\wpp_1\Documents\Neurasmus\VU\Internship\codes\data\optimiz_stim';
@@ -27,7 +25,7 @@ noncrit_run_number	= 0;
 
 crit_run_number = 1;
 
-stimulus_size_to_analyze = 40;
+stimulus_size_to_analyze = 1;
 
 non_cri_simulation_name = '2022-07-13_c_ee6_c_ei22_stim_size';
 cri_simulation_name = '2022-07-05_c_ee11.57199543729056_stim_size';
@@ -37,6 +35,8 @@ plf_crit_0_stim = get_plf_all_trials(data_path,...
     [cri_simulation_name,'0','_stim_results.csv'],[cri_simulation_name,'0','_tempo.csv']);
 plf_crit_10_stim = get_plf_all_trials(data_path,...
     [cri_simulation_name,'10','_stim_results.csv'],[cri_simulation_name,'10','_tempo.csv']);
+plf_crit_40_stim = get_plf_all_trials(data_path,...
+    [cri_simulation_name,'40','_stim_results.csv'],[cri_simulation_name,'40','_tempo.csv']);
 plf_crit_100_stim = get_plf_all_trials(data_path,...
     [cri_simulation_name,'100','_stim_results.csv'],[cri_simulation_name,'100','_tempo.csv']);
 plf_crit_170_stim = get_plf_all_trials(data_path,...
@@ -47,17 +47,19 @@ set(fig,'Position',[0 0 600 500]);
 plot(-0.75:0.001:0.75,plf_crit_0_stim,'LineWidth',2,'Color',[0 0 0]);
 hold on;
 plot(-0.75:0.001:0.75,plf_crit_10_stim,'LineWidth',2,'Color',[0.0351 0.664 0.203]);
+plot(-0.75:0.001:0.75,plf_crit_40_stim,'LineWidth',2,'Color',[0.2 0.7 0.2]);
 plot(-0.75:0.001:0.75,plf_crit_100_stim,'LineWidth',2,'Color',[0.05 0.945 0.289]);
 plot(-0.75:0.001:0.75,plf_crit_170_stim,'LineWidth',2,'Color',[0.6 0.98 0.7]);
 xlim([-0.75 0.75]);
 ylim([0 1]);
-legend({'0','10','100','170'},'Location','northwest');
+legend({'0','10','40','100','170'},'Location','northwest');
 xticks([-0.6 -0.4 -0.2 0 0.2 0.4 0.6]);
 xticklabels({'-0.6','','','0','','','0.6'});
 set(gca,'fontsize', 16);
 xlabel({'Time since stimulation';'(seconds)'});
 ylabel('PLF');
-saveas(fig,fullfile(figures_path,['fig_',num2str(stimulus_size_to_analyze),'_1C.fig']),'fig');
+saveas(fig,fullfile(figures_path,'fig_1C.fig'),'fig');
+saveas(fig,fullfile(figures_path,'fig_1C.svg'),'svg');
 
 %plot plf for subcrit/crit/supercrit at same stimulus size(5)
 plf_noncrit_150_stim = get_plf_all_trials(data_path,...
@@ -83,12 +85,14 @@ xticklabels({'-0.6','','','0','','','0.6'});
 set(gca,'fontsize', 16);
 legend({'Noncritical','Critical'},'Location','northwest');
 saveas(fig,fullfile(figures_path,['fig_',num2str(stimulus_size_to_analyze),'_2A.fig']),'fig');
+saveas(fig,fullfile(figures_path,['fig_',num2str(stimulus_size_to_analyze),'_2A.svg']),'svg');
 
 %plot plf at different pre-stimulus amplitude percentiles for critical network at same stimulus
 %size(150)
 fig = plot_plf_percentiles(data_path,...
     [cri_simulation_name,num2str(stimulus_size_to_analyze),'_stim_results.csv'],[cri_simulation_name,num2str(stimulus_size_to_analyze),'_tempo.csv']);
 saveas(fig,fullfile(figures_path,['fig_',num2str(stimulus_size_to_analyze),'_2C.fig']),'fig');
+saveas(fig,fullfile(figures_path,['fig_',num2str(stimulus_size_to_analyze),'_2C.svg']),'svg');
 
 function fig = plot_plf_percentiles(folder_path, simu_file_name, stimu_file_name)
 
@@ -166,13 +170,13 @@ function fig = plot_plf_percentiles(folder_path, simu_file_name, stimu_file_name
 
     xticks([-0.6 -0.4 -0.2 0 0.2 0.4 0.6]);
     xticklabels({'-0.6','','','0','','','0.6'});
-    yticks([0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1]);
-    yticklabels({'0','','0.1','','0.2','','0.3','','0.4','','0.5','','0.6','','0.7','','0.8','','0.9','','1.0'});
+    yticks([0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]);
+    yticklabels({'0','','0.1','','0.2','','0.3','','0.4','','0.5'});
     xlabel({'Time since stimulation','(seconds)'});
     ylabel('PLF');
     legend('0-10th percentile','40-50th percentile','90-100th percentile','Location','northwest');
 
-    ylim([0 1]);
+    ylim([0 0.5]);
     xlim([-0.75 0.75]);
 
     set(gca,'fontsize', 16);

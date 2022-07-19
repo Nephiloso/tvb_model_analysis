@@ -1,8 +1,12 @@
 clear all
+% add the analysis folder to path
+addpath(genpath('C:\Users\wpp_1\Documents\Neurasmus\VU\Internship\codes\Arthur 2020 code\model code\data_analysis'))
+
 %% Run stimulus response analysis
 my_path = 'C:\Users\wpp_1\Documents\Neurasmus\VU\Internship\codes\data\optimiz_stim';
 Stimulus_size = [1; 10; 40; 100; 120; 150; 170];
-simulation_name = '2022-07-13_c_ee6_c_ei22_stim_size';
+% '2022-07-05_c_ee11.57199543729056_stim_size';'2022-07-13_c_ee6_c_ei22_stim_size'
+simulation_name = '2022-07-05_c_ee11.57199543729056_stim_size';
 stim_sizes_name = {'1'; '10'; '40'; '100'; '120'; '150'; '170'};
 amplitude_regulations{7,1}=[];
 phase_regulations{7,1}=[];
@@ -11,16 +15,14 @@ amplitude_percentile_plfss{7,1}=[];
 bins_phasess{7,1}=[];
 phasebin_plfss{7,1}=[];
 PLF = [];
-Run_Number=[0;0;0;0;0;0;0]; % 0 for noncritical network
-% Run_Number=[1;1;1;1;1;1;1]; % 1 for critical network
+% Run_Number=[0;0;0;0;0;0;0]; % 0 for noncritical network
+Run_Number=[1;1;1;1;1;1;1]; % 1 for critical network
 for i=1:length(stim_sizes_name)
     simulation_data_file_path = fullfile(my_path,[simulation_name,stim_sizes_name{i},'_stim_results.csv']);  
     %a. read a file name from the folder; compare the filename and find all the
     %files from the same parameter sets
     %b. 
 
-    % add the analysis folder to path
-    addpath(genpath('C:\Users\wpp_1\Documents\Neurasmus\VU\Internship\codes\Arthur 2020 code\model code\data_analysis'))
     result = readmatrix(simulation_data_file_path);
     v1 = result(:,2);
     raw_signal_to_process = v1;
@@ -33,10 +35,10 @@ for i=1:length(stim_sizes_name)
     stimulus = true;
     try 
         pre_stim_ms =  750;
-        post_stim_ms = 750; % ?
+        post_stim_ms = 750;
         timepoints_around_stimulus = (-pre_stim_ms:post_stim_ms);
         number_timepoints_around_stimulus = length(timepoints_around_stimulus);
-        poststim_point = 250;  % ?
+        poststim_point = 150;
         index_poststim_point = pre_stim_ms+poststim_point+1;%+1 to skip the stimulation time
 
         %% Extract stimulus time series

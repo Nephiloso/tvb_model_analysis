@@ -23,21 +23,32 @@ def eva_limit_cycle(params, dt=2**-1):
     plot_result(savg_t,savg, peaks=x_peak[0]+waive_length)
     return None
 
-def dfa_analysis(result_name, dt=1, not_remove = False):
+def dfa_analysis(result_name, dt=1, not_remove = False, save_inter=False):
     df = pd.read_csv(result_name, header = None)
     data = df[1].to_numpy()
     if sum(np.isnan(data))>0:  # get rid of unrealistic trials with NaN
         os.remove(result_name)
         return 2
     R = []
-    peak = get_psd_peak(data, dt=dt)
+    if save_inter:
+        peak = get_psd_peak(data, dt=dt,save_path=result_name)
+    else:
+        peak = get_psd_peak(data, dt=dt)
     for i in range(len(BANDS)):
         raw = dfa.load_data([data], sfreq = 1000/dt)
         R0 , _ = dfa.compute_DFA(raw, l_freq=BANDS[i][0], h_freq=BANDS[i][1])
         R.append(R0)
         if (peak > BANDS[i][0]) & (peak < BANDS[i][1]):
             band = i
+        if save_inter:
+            filtered_t, filtered_d = raw[:]
+            df = pd.DataFrame({'time':filtered_t[0], 'data':filtered_d})
+            filtered_name=result_name[:result_name.find('results.csv')]+'filtered'+str(BANDS[i][0])+'_'+str(BANDS[i][1])+'.csv'
+            df.to_csv(filtered_name, mode='a', index=False, header=False)
         del raw
+        del filtered_t
+        del filtered_d
+        del filtered_name
     raw = dfa.load_data([data], sfreq = 1000/dt)
     R0 , _ = dfa.compute_DFA(raw,filter_data=False)
     R.append(R0)
@@ -101,4 +112,9 @@ def get_psd_peak(data, **kwargs):
     if f[idx0]<0.5:
         idx0+=1
     peak_idx = np.argmax(Pxxf[idx0:idx1])
+    if list(kwargs.keys())[1] == ('save_path'):
+        df = pd.DataFrame({'f':f, 'Pxxf':Pxxf})
+        result_name = list(kwargs.values())[1]
+        psd_name=result_name[:result_name.find('results.csv')]+'psd'+'.csv'
+        df.to_csv(psd_name, mode='a', index=False, header=False)
     return f[peak_idx+idx0]

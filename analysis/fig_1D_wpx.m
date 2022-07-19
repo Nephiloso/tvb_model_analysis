@@ -32,7 +32,7 @@ saveas(fig,fullfile(figures_path,'fig_1D.fig'),'fig');
 % 
 % fig = plot_dynamicrange_3_nets(table_params_all);
 % saveas(fig,'figures/fig_1S3B.eps','epsc');
-struct
+% struct
 
 function fig = plot_dynamicrange_2_nets(table_params_all)
     noncrit_run_number	= 0;
@@ -52,7 +52,7 @@ function fig = plot_dynamicrange_2_nets(table_params_all)
     fsigm_inv = @(param,xval) param(3)-reallog((param(2)-param(1))./(xval-param(1)) - 1) * 1/param(4);
 
     fig=figure('color','w');
-    set(fig,'Position',[0 0 480 280]);
+    set(fig,'Position',[0 0 600 500]);
     warning off;
     cols=zeros(2,3);
     cols(1,:)=color_blue;
@@ -80,9 +80,9 @@ function fig = plot_dynamicrange_2_nets(table_params_all)
             x = reallog(crt_stims);
             fitDats = fsigm(params,x);
 
-            plot(x,crt_data,'.','Color',cols(i,:),'LineWidth',1.2);
+            plot(x,crt_data,'.','Color',cols(i,:),'LineWidth',2.5);
             hold on;
-            plot(x,fitDats,'Color',cols(i,:),'LineWidth',1.2);
+            plot(x,fitDats,'Color',cols(i,:),'LineWidth',2.5);
 
             max_fit_and_data = max(max(crt_data),max(fitDats));
             norm_fits = fitDats/max_fit_and_data;
@@ -98,8 +98,8 @@ function fig = plot_dynamicrange_2_nets(table_params_all)
             xinv_10perc = fsigm_inv(params,tenPerc);
             xinv_90perc = fsigm_inv(params,ninetyPerc);
 
-            plot(xinv_10perc,tenPerc,'x','Color',cols(i,:),'LineWidth',1.2);
-            plot(xinv_90perc,ninetyPerc,'x','Color',cols(i,:),'LineWidth',1.2);
+            plot(xinv_10perc,tenPerc,'x','Color',cols(i,:),'LineWidth',2.5);
+            plot(xinv_90perc,ninetyPerc,'x','Color',cols(i,:),'LineWidth',2.5);
 
             %this ends up empty if the 
             if isempty(xinv_10perc) | isempty(xinv_90perc)
@@ -134,18 +134,21 @@ function fig = plot_dynamicrange_2_nets(table_params_all)
     box off;
 
     xlabel('Neurons Stimulated');
-    ylabel('PLF');
+    ylabel('PLF at 150ms');
     xlim([0 reallog(180)]);
-    yticks([0 0.5 1]);
     set(gca,'fontsize', 16);
-    line(limits_dynamic_range(1,:),[1.3 1.3],'Color',color_blue,'LineWidth',1.2);
-    line(limits_dynamic_range(2,:),[1.2 1.2],'Color',color_green,'LineWidth',2);
+    line(limits_dynamic_range(1,:),[0.38 0.38],'Color',color_blue,'LineWidth',2.2);
+    line(limits_dynamic_range(2,:),[0.32 0.32],'Color',color_green,'LineWidth',2.2);
 %     line(limits_dynamic_range(3,:),[1.2 1.2],'Color',color_red,'LineWidth',1.2);
-    ylim([0 1.35]);
-    text(limits_dynamic_range(1,2)+0.1,1.3,num2str(round(dynamicrange_values(1),2)));
+    ylim([0 0.4]);
+    yticks([0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4]);
+    yticklabels({'0','','0.1','','0.2','','0.3','','0.4'});
+    text(limits_dynamic_range(1,2)+0.1,0.38,num2str(round(dynamicrange_values(1),2)),'FontSize',12);
 %     text(limits_dynamic_range(2,2)+0.1,1.2,num2str(round(dynamicrange_values(2),2)));
-    text(limits_dynamic_range(2,2)+0.1,1.2,num2str(round(dynamicrange_values(2),2)));
+    text(limits_dynamic_range(2,2)+0.1,0.32,num2str(round(dynamicrange_values(2),2)),'FontSize',12);
 %     xticks(reallog([1 3 9 25 74 216 632 1800]));
+    text(0.2,0.38,'Subcritical','FontSize',12,'Color',color_blue);
+    text(0.2,0.32,'Critical','FontSize',12,'Color',color_green);
     xticks(reallog([1 10 40 180]));
     xticklabels({'1','10','40','180'});
     xtickangle(45);
