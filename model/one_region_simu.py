@@ -102,7 +102,9 @@ def config_one_region():
                                             centres = centres,
                                             cortical = cortical,
                                             orientations = orientations,
-                                            areas = areas,weights = weights)
+                                            areas = areas,weights = weights,
+                                            hemispheres = np.array(True)) # hemispheres takes in an array of booleans 
+                                                                          # where True refers to the right hemisphere and False to the left hemisphere
     one_region.configure()
     return one_region
 
